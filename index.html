@@ -340,6 +340,112 @@
     opacity: 0; transition: opacity 0.4s;
   }
   .reach-overlay.show { opacity: 1; }
+
+  /* -- Hover Demo Screen -- */
+  #hoverDemo {
+    position: relative;
+  }
+  .hover-top-bar {
+    display: flex; justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    padding-top: max(
+      env(safe-area-inset-top), 12px
+    );
+    background: var(--card);
+    z-index: 10;
+  }
+  .hover-top-bar .back {
+    font-size: 15px; color: var(--accent);
+    background: none; border: none;
+    font-weight: 500; cursor: pointer;
+  }
+  .hover-top-bar .title {
+    font-size: 15px; font-weight: 600;
+  }
+
+  /* Menu bar */
+  .menu-bar {
+    display: flex; gap: 0;
+    background: var(--card2);
+    border-bottom: 1px solid #444;
+    z-index: 30; position: relative;
+  }
+  .menu-item {
+    position: relative;
+    padding: 12px 16px;
+    font-size: 14px; font-weight: 500;
+    color: var(--text2);
+    transition: background 0.15s, color 0.15s;
+  }
+  .menu-item.hovered {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  /* Dropdown */
+  .dropdown {
+    position: absolute;
+    top: 100%; left: 0;
+    min-width: 200px;
+    background: var(--card);
+    border: 1px solid #444;
+    border-radius: 0 0 12px 12px;
+    overflow: hidden;
+    display: none;
+    z-index: 40;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+  }
+  .dropdown.open { display: block; }
+  .dropdown-item {
+    display: flex; align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    font-size: 14px; color: var(--text);
+    transition: background 0.1s;
+    border-bottom: 1px solid #333;
+  }
+  .dropdown-item:last-child {
+    border-bottom: none;
+  }
+  .dropdown-item.hovered {
+    background: var(--accent);
+  }
+  .dropdown-item .icon {
+    font-size: 16px; width: 24px;
+    text-align: center;
+  }
+  .dropdown-item .shortcut {
+    margin-left: auto;
+    font-size: 11px; color: var(--text2);
+    font-weight: 500;
+  }
+  .dropdown-item.hovered .shortcut {
+    color: rgba(255,255,255,0.7);
+  }
+
+  /* Hover demo content area */
+  .hover-content {
+    flex: 1; display: flex;
+    align-items: center; justify-content: center;
+    padding: 24px;
+    text-align: center;
+  }
+  .hover-content p {
+    font-size: 14px; color: var(--text2);
+    line-height: 1.6; max-width: 280px;
+  }
+  .hover-status {
+    padding: 10px 16px;
+    background: var(--card);
+    border-top: 1px solid #333;
+    font-size: 12px; color: var(--text2);
+    text-align: center;
+    z-index: 10;
+  }
+  .hover-status strong {
+    color: var(--accent);
+  }
 </style>
 </head>
 <body>
@@ -364,6 +470,10 @@
   <button class="mode-btn btn-outline"
     onclick="startDemo('freeplay')">
     Free Play (no timer)
+  </button>
+  <button class="mode-btn btn-secondary"
+    onclick="startHoverDemo()">
+    Hover Menu Demo
   </button>
 </div>
 
@@ -449,6 +559,116 @@
     onclick="goHome()">
     Try Again
   </button>
+</div>
+
+<!-- HOVER DEMO -->
+<div id="hoverDemo" class="screen">
+  <div class="hover-top-bar">
+    <button class="back" onclick="goHome()">
+      Done
+    </button>
+    <span class="title">Hover Demo</span>
+    <span class="mode-label thumbpad-label">
+      THUMBPAD
+    </span>
+  </div>
+  <div class="menu-bar" id="menuBar">
+    <div class="menu-item" data-menu="actions">
+      Actions
+      <div class="dropdown">
+        <div class="dropdown-item"
+          data-action="copy">
+          <span class="icon">&#9998;</span>
+          <span>Copy</span>
+          <span class="shortcut">Cmd+C</span>
+        </div>
+        <div class="dropdown-item"
+          data-action="paste">
+          <span class="icon">&#128203;</span>
+          <span>Paste</span>
+          <span class="shortcut">Cmd+V</span>
+        </div>
+        <div class="dropdown-item"
+          data-action="undo">
+          <span class="icon">&#8617;</span>
+          <span>Undo</span>
+          <span class="shortcut">Cmd+Z</span>
+        </div>
+        <div class="dropdown-item"
+          data-action="share">
+          <span class="icon">&#9993;</span>
+          <span>Share</span>
+        </div>
+      </div>
+    </div>
+    <div class="menu-item" data-menu="edit">
+      Edit
+      <div class="dropdown">
+        <div class="dropdown-item"
+          data-action="bold">
+          <span class="icon"><b>B</b></span>
+          <span>Bold</span>
+          <span class="shortcut">Cmd+B</span>
+        </div>
+        <div class="dropdown-item"
+          data-action="italic">
+          <span class="icon"><i>I</i></span>
+          <span>Italic</span>
+          <span class="shortcut">Cmd+I</span>
+        </div>
+        <div class="dropdown-item"
+          data-action="find">
+          <span class="icon">&#128269;</span>
+          <span>Find</span>
+          <span class="shortcut">Cmd+F</span>
+        </div>
+      </div>
+    </div>
+    <div class="menu-item" data-menu="view">
+      View
+      <div class="dropdown">
+        <div class="dropdown-item"
+          data-action="zoomin">
+          <span class="icon">&#128270;</span>
+          <span>Zoom In</span>
+          <span class="shortcut">Cmd++</span>
+        </div>
+        <div class="dropdown-item"
+          data-action="zoomout">
+          <span class="icon">&#128269;</span>
+          <span>Zoom Out</span>
+          <span class="shortcut">Cmd+-</span>
+        </div>
+        <div class="dropdown-item"
+          data-action="fullscreen">
+          <span class="icon">&#9974;</span>
+          <span>Full Screen</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="hover-content" id="hoverContent">
+    <p>
+      Use the thumbpad below to move the
+      cursor over the menu items above.
+      Dropdowns open on hover &mdash;
+      no tap needed.
+    </p>
+  </div>
+  <div class="hover-status" id="hoverStatus">
+    Hover over a menu item to see the dropdown
+  </div>
+
+  <!-- Reuse cursor -->
+  <div class="thumbpad-zone"
+    id="hoverThumbpadZone">
+    <div class="pad-border"></div>
+    <span class="hint">
+      Touch &amp; drag here to move cursor
+    </span>
+    <div class="touch-indicator"
+      id="hoverTouchIndicator"></div>
+  </div>
 </div>
 
 <script>
@@ -975,10 +1195,219 @@ function drawReachOverlay() {
 // Prevent scrolling
 document.addEventListener(
   'touchmove',
-  e => { if (e.target.closest('#demo'))
-    e.preventDefault(); },
+  e => {
+    if (e.target.closest('#demo') ||
+      e.target.closest('#hoverDemo'))
+      e.preventDefault();
+  },
   { passive: false }
 );
+
+// -- Hover Demo --
+let hoverActive = false;
+let hCursorX = 0, hCursorY = 0;
+let hLastTX = 0, hLastTY = 0, hLastTime = 0;
+let openMenu = null;
+let hoveredDropItem = null;
+
+function startHoverDemo() {
+  showScreen('hoverDemo');
+  openMenu = null;
+  hoveredDropItem = null;
+  document.querySelectorAll('.menu-item')
+    .forEach(m => m.classList.remove('hovered'));
+  document.querySelectorAll('.dropdown')
+    .forEach(d => d.classList.remove('open'));
+  document.querySelectorAll('.dropdown-item')
+    .forEach(d => d.classList.remove('hovered'));
+  $('hoverStatus').textContent =
+    'Hover over a menu item to see the dropdown';
+}
+
+function updateHoverCursor() {
+  const c = $('cursor');
+  c.style.left = (hCursorX - 2) + 'px';
+  c.style.top = (hCursorY - 2) + 'px';
+
+  let hitMenuItem = null;
+  let hitDropItem = null;
+
+  document.querySelectorAll(
+    '#menuBar .dropdown-item'
+  ).forEach(di => {
+    const r = di.getBoundingClientRect();
+    if (hCursorX >= r.left &&
+      hCursorX <= r.right &&
+      hCursorY >= r.top &&
+      hCursorY <= r.bottom) {
+      hitDropItem = di;
+    }
+  });
+
+  document.querySelectorAll(
+    '#menuBar > .menu-item'
+  ).forEach(mi => {
+    const r = mi.getBoundingClientRect();
+    if (hCursorX >= r.left &&
+      hCursorX <= r.right &&
+      hCursorY >= r.top &&
+      hCursorY <= r.bottom) {
+      hitMenuItem = mi;
+    }
+  });
+
+  document.querySelectorAll('.menu-item')
+    .forEach(m => m.classList.remove('hovered'));
+  document.querySelectorAll('.dropdown')
+    .forEach(d => d.classList.remove('open'));
+  document.querySelectorAll('.dropdown-item')
+    .forEach(d => d.classList.remove('hovered'));
+
+  if (hitDropItem) {
+    hitDropItem.classList.add('hovered');
+    const parent = hitDropItem
+      .closest('.menu-item');
+    if (parent) {
+      parent.classList.add('hovered');
+      parent.querySelector('.dropdown')
+        .classList.add('open');
+    }
+    if (hitDropItem !== hoveredDropItem) {
+      hoveredDropItem = hitDropItem;
+      if (navigator.vibrate) {
+        navigator.vibrate(8);
+      }
+    }
+    $('hoverStatus').innerHTML =
+      'Selected: <strong>' +
+      hitDropItem.querySelector('span:nth-child(2)')
+        .textContent +
+      '</strong>';
+  } else if (hitMenuItem) {
+    hitMenuItem.classList.add('hovered');
+    hitMenuItem.querySelector('.dropdown')
+      .classList.add('open');
+    hoveredDropItem = null;
+    if (openMenu !== hitMenuItem) {
+      openMenu = hitMenuItem;
+      if (navigator.vibrate) {
+        navigator.vibrate(5);
+      }
+    }
+    $('hoverStatus').innerHTML =
+      'Menu: <strong>' +
+      hitMenuItem.dataset.menu +
+      '</strong>';
+  } else {
+    openMenu = null;
+    hoveredDropItem = null;
+    $('hoverStatus').textContent =
+      'Hover over a menu item';
+  }
+}
+
+const hPad = $('hoverThumbpadZone');
+const hInd = $('hoverTouchIndicator');
+
+hPad.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const t = e.touches[0];
+  hoverActive = true;
+  const content = $('hoverContent');
+  const r = content.getBoundingClientRect();
+  hCursorX = r.left + r.width / 2;
+  hCursorY = r.top;
+  hLastTX = t.clientX;
+  hLastTY = t.clientY;
+  hLastTime = Date.now();
+  hPad.classList.add('active');
+  hInd.style.display = 'block';
+  hInd.style.left = t.clientX + 'px';
+  hInd.style.top = t.clientY + 'px';
+  const c = $('cursor');
+  c.style.display = 'block';
+  c.classList.remove('snapping');
+  c.style.left = (hCursorX - 2) + 'px';
+  c.style.top = (hCursorY - 2) + 'px';
+  c.classList.add('visible');
+});
+
+hPad.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (!hoverActive) return;
+  const t = e.touches[0];
+  const now = Date.now();
+  const dt = Math.max(now - hLastTime, 1);
+  const fdx = t.clientX - hLastTX;
+  const fdy = t.clientY - hLastTY;
+  const speed = Math.hypot(fdx, fdy) / dt;
+  const gain = Math.min(2.5, 0.6 + speed * 1.8);
+
+  hCursorX += fdx * gain;
+  hCursorY += fdy * gain;
+
+  const bar = $('menuBar');
+  const br = bar.getBoundingClientRect();
+  const content = $('hoverContent');
+  const cr = content.getBoundingClientRect();
+  hCursorX = Math.min(
+    Math.max(br.left, hCursorX), br.right
+  );
+  hCursorY = Math.min(
+    Math.max(br.top, hCursorY), cr.bottom
+  );
+
+  hLastTX = t.clientX;
+  hLastTY = t.clientY;
+  hLastTime = now;
+  hInd.style.left = t.clientX + 'px';
+  hInd.style.top = t.clientY + 'px';
+  updateHoverCursor();
+});
+
+hPad.addEventListener('touchend', e => {
+  e.preventDefault();
+  hoverActive = false;
+  hPad.classList.remove('active');
+  hInd.style.display = 'none';
+  const c = $('cursor');
+  c.classList.remove('visible');
+
+  if (hoveredDropItem) {
+    const name = hoveredDropItem
+      .querySelector('span:nth-child(2)')
+      .textContent;
+    $('hoverStatus').innerHTML =
+      'Tapped: <strong>' + name + '</strong>';
+    hoveredDropItem.style.background =
+      'var(--green)';
+    setTimeout(() => {
+      hoveredDropItem.style.background = '';
+    }, 400);
+  }
+
+  document.querySelectorAll('.menu-item')
+    .forEach(m => m.classList.remove('hovered'));
+  document.querySelectorAll('.dropdown')
+    .forEach(d => d.classList.remove('open'));
+  document.querySelectorAll('.dropdown-item')
+    .forEach(d => d.classList.remove('hovered'));
+  openMenu = null;
+  hoveredDropItem = null;
+});
+
+hPad.addEventListener('touchcancel', () => {
+  hoverActive = false;
+  hPad.classList.remove('active');
+  hInd.style.display = 'none';
+  $('cursor').classList.remove('visible');
+  document.querySelectorAll('.menu-item')
+    .forEach(m => m.classList.remove('hovered'));
+  document.querySelectorAll('.dropdown')
+    .forEach(d => d.classList.remove('open'));
+  document.querySelectorAll('.dropdown-item')
+    .forEach(d => d.classList.remove('hovered'));
+});
 </script>
 </body>
 </html>
