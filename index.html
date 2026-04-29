@@ -477,6 +477,8 @@ let cursorX = 0, cursorY = 0;
 let padActive = false;
 let touchStartX = 0, touchStartY = 0;
 let cursorStartX = 0, cursorStartY = 0;
+let lastTouchX = 0, lastTouchY = 0;
+let lastTouchTime = 0;
 let results = {};
 let currentSnap = null;
 let wasSnapped = false;
@@ -861,6 +863,9 @@ pad.addEventListener('touchstart', e => {
   padActive = true;
   touchStartX = t.clientX;
   touchStartY = t.clientY;
+  lastTouchX = t.clientX;
+  lastTouchY = t.clientY;
+  lastTouchTime = Date.now();
   cursorStartX = cursorX;
   cursorStartY = cursorY;
   pad.classList.add('active');
@@ -875,19 +880,34 @@ pad.addEventListener('touchmove', e => {
   e.preventDefault();
   if (!padActive) return;
   const t = e.touches[0];
-  const dx = (t.clientX - touchStartX) * GAIN;
-  const dy = (t.clientY - touchStartY) * GAIN;
+  const now = Date.now();
+  const dt = Math.max(now - lastTouchTime, 1);
+  const fdx = t.clientX - lastTouchX;
+  const fdy = t.clientY - lastTouchY;
+  const speed = Math.hypot(fdx, fdy) / dt;
+
+  const minGain = 0.6;
+  const maxGain = 2.5;
+  const gain = Math.min(
+    maxGain,
+    minGain + speed * 1.8
+  );
+
+  cursorX += fdx * gain;
+  cursorY += fdy * gain;
 
   const area = $('targetArea');
   const r = area.getBoundingClientRect();
   cursorX = Math.min(
-    Math.max(r.left, cursorStartX + dx),
-    r.right
+    Math.max(r.left, cursorX), r.right
   );
   cursorY = Math.min(
-    Math.max(r.top, cursorStartY + dy),
-    r.bottom
+    Math.max(r.top, cursorY), r.bottom
   );
+
+  lastTouchX = t.clientX;
+  lastTouchY = t.clientY;
+  lastTouchTime = now;
 
   indicator.style.left = t.clientX + 'px';
   indicator.style.top = t.clientY + 'px';
