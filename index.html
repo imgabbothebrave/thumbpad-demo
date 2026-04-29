@@ -451,7 +451,7 @@
 <script>
 const ROUND_TIME = 15;
 const TARGET_COUNT = 1;
-const SNAP_DIST = 14;
+const SNAP_DIST = 35;
 const GAIN = 1.3;
 const ICONS = [
   '&#9733;','&#9829;','&#9830;',
@@ -479,6 +479,7 @@ let touchStartX = 0, touchStartY = 0;
 let cursorStartX = 0, cursorStartY = 0;
 let results = {};
 let currentSnap = null;
+let wasSnapped = false;
 
 const $ = id => document.getElementById(id);
 
@@ -818,6 +819,12 @@ function updateCursor() {
   const c = $('cursor');
   const ring = $('snapRing');
   if (snapped) {
+    if (!wasSnapped) {
+      if (navigator.vibrate) {
+        navigator.vibrate(10);
+      }
+    }
+    wasSnapped = true;
     currentSnap = snapped;
     const cx = parseFloat(snapped.dataset.cx);
     const cy = parseFloat(snapped.dataset.cy);
@@ -829,6 +836,7 @@ function updateCursor() {
     ring.style.top = cy + 'px';
     ring.style.display = 'block';
   } else {
+    wasSnapped = false;
     currentSnap = null;
     c.classList.remove('snapped');
     c.classList.remove('snapping');
