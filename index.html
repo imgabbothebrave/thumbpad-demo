@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+  content="width=device-width, initial-scale=1.0,
+  maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable"
+  content="yes">
+<meta name="apple-mobile-web-app-status-bar-style"
+  content="black-translucent">
+<title>ThumbPad Demo</title>
+<style>
+  :root {
+    --cursor-size: 28px;
+    --pad-height: 38vh;
+    --accent: #007AFF;
+    --accent-light: rgba(0,122,255,0.15);
+    --green: #34C759;
+    --red: #FF3B30;
+    --orange: #FF9500;
+    --bg: #000;
+    --card: #1C1C1E;
+    --card2: #2C2C2E;
+    --text: #FFF;
+    --text2: #8E8E93;
+  }
+  * {
+    margin: 0; padding: 0; box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  html, body {
+    height: 100%; overflow: hidden;
+    background: var(--bg);
+    font-family: -apple-system, BlinkMacSystemFont,
+      'SF Pro', 'Helvetica Neue', sans-serif;
+    color: var(--text);
+    touch-action: none;
+  }
+
+  /* -- Screens -- */
+  .screen {
+    display: none; height: 100%;
+    flex-direction: column;
+  }
+  .screen.active { display: flex; }
+
+  /* -- Intro Screen -- */
+  #intro {
+    justify-content: center;
+    align-items: center; gap: 24px;
+    padding: 40px 32px;
+    text-align: center;
+  }
+  #intro h1 {
+    font-size: 32px; font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+  #intro h1 span { color: var(--accent); }
+  #intro p {
+    font-size: 15px; color: var(--text2);
+    line-height: 1.5; max-width: 300px;
+  }
+  .mode-btn {
+    width: 100%; max-width: 300px;
+    padding: 16px; border-radius: 14px;
+    border: none; font-size: 17px;
+    font-weight: 600; cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .mode-btn:active {
+    transform: scale(0.97);
+  }
+  .btn-primary {
+    background: var(--accent); color: #fff;
+  }
+  .btn-secondary {
+    background: var(--card2); color: var(--text);
+  }
+  .btn-outline {
+    background: transparent; color: var(--accent);
+    border: 1.5px solid var(--accent);
+  }
+
+  /* -- Demo Screen -- */
+  #demo { position: relative; }
+
+  /* Top bar */
+  .top-bar {
+    display: flex; justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    padding-top: max(env(safe-area-inset-top), 12px);
+    background: var(--card);
+    z-index: 10;
+  }
+  .top-bar .back {
+    font-size: 15px; color: var(--accent);
+    background: none; border: none;
+    font-weight: 500; cursor: pointer;
+    padding: 4px 0;
+  }
+  .top-bar .title {
+    font-size: 15px; font-weight: 600;
+    color: var(--text);
+  }
+  .top-bar .mode-label {
+    font-size: 12px; font-weight: 500;
+    padding: 4px 10px; border-radius: 12px;
+  }
+  .mode-label.thumbpad-label {
+    background: rgba(0,122,255,0.2);
+    color: var(--accent);
+  }
+  .mode-label.normal-label {
+    background: rgba(255,149,0,0.2);
+    color: var(--orange);
+  }
+
+  /* Stats bar */
+  .stats-bar {
+    display: flex; gap: 0;
+    background: var(--card);
+    border-bottom: 1px solid #333;
+    padding: 0 12px;
+  }
+  .stat {
+    flex: 1; text-align: center;
+    padding: 8px 4px;
+  }
+  .stat-val {
+    font-size: 20px; font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-label {
+    font-size: 10px; color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .stat-val.green { color: var(--green); }
+  .stat-val.red { color: var(--red); }
+
+  /* Target area */
+  .target-area {
+    flex: 1; position: relative;
+    overflow: hidden;
+  }
+
+  /* Targets */
+  .target {
+    position: absolute;
+    width: 52px; height: 52px;
+    border-radius: 14px;
+    display: flex; align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    transition: transform 0.15s, opacity 0.15s;
+    z-index: 5;
+  }
+  .target.hit {
+    transform: scale(1.3);
+    opacity: 0;
+  }
+  .target-ring {
+    position: absolute;
+    width: 100%; height: 100%;
+    border-radius: 14px;
+    border: 2px solid rgba(255,255,255,0.15);
+  }
+
+  /* Cursor */
+  #cursor {
+    position: fixed;
+    width: var(--cursor-size);
+    height: var(--cursor-size);
+    pointer-events: none;
+    z-index: 100;
+    display: none;
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5));
+    transition: opacity 0.15s;
+  }
+  #cursor svg {
+    width: 100%; height: 100%;
+  }
+  #cursor.snapped {
+    filter: drop-shadow(
+      0 0 12px rgba(0,122,255,0.6)
+    );
+  }
+  .snap-ring {
+    position: fixed;
+    width: 64px; height: 64px;
+    border: 2px solid var(--accent);
+    border-radius: 16px;
+    pointer-events: none;
+    z-index: 99;
+    display: none;
+    transform: translate(-50%, -50%);
+    animation: snapPulse 0.8s ease infinite;
+  }
+  @keyframes snapPulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+
+  /* ThumbPad zone */
+  .thumbpad-zone {
+    position: relative;
+    height: var(--pad-height);
+    background: linear-gradient(
+      to bottom,
+      rgba(0,122,255,0.03),
+      rgba(0,122,255,0.08)
+    );
+    border-top: 1px solid rgba(0,122,255,0.2);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 20;
+  }
+  .thumbpad-zone .hint {
+    font-size: 13px; color: var(--text2);
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .thumbpad-zone.active .hint {
+    opacity: 0;
+  }
+  .touch-indicator {
+    position: absolute;
+    width: 70px; height: 70px;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle,
+      rgba(0,122,255,0.25) 0%,
+      rgba(0,122,255,0) 70%
+    );
+    pointer-events: none;
+    display: none;
+    transform: translate(-50%, -50%);
+    z-index: 21;
+  }
+  .pad-border {
+    position: absolute; inset: 0;
+    border: 1.5px dashed rgba(0,122,255,0.25);
+    border-radius: 0;
+    pointer-events: none;
+  }
+
+  /* Normal mode - no pad */
+  .normal-mode .thumbpad-zone {
+    display: none;
+  }
+  .normal-mode .target-area {
+    flex: 1;
+  }
+
+  /* Results Screen */
+  #results {
+    justify-content: center;
+    align-items: center; gap: 20px;
+    padding: 40px 32px;
+    text-align: center;
+  }
+  #results h2 {
+    font-size: 28px; font-weight: 700;
+  }
+  .result-card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 20px; width: 100%;
+    max-width: 320px;
+  }
+  .result-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    font-size: 15px;
+  }
+  .result-row .label { color: var(--text2); }
+  .result-row .val { font-weight: 600; }
+  .divider {
+    height: 1px; background: #333;
+    margin: 4px 0;
+  }
+
+  /* Comparison Screen */
+  #comparison {
+    justify-content: center;
+    align-items: center; gap: 16px;
+    padding: 40px 24px;
+    text-align: center;
+  }
+  #comparison h2 {
+    font-size: 26px; font-weight: 700;
+  }
+  .comp-cards {
+    width: 100%; max-width: 340px;
+    display: flex; flex-direction: column;
+    gap: 12px;
+  }
+  .comp-card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 16px 20px;
+    display: flex; justify-content: space-between;
+    align-items: center;
+  }
+  .comp-card .comp-label {
+    font-size: 14px; color: var(--text2);
+  }
+  .comp-card .comp-val {
+    font-size: 22px; font-weight: 700;
+  }
+  .comp-card .comp-val.winner {
+    color: var(--green);
+  }
+  .comp-card .comp-val.loser {
+    color: var(--red);
+  }
+  .verdict {
+    font-size: 15px; color: var(--text2);
+    line-height: 1.5; max-width: 300px;
+  }
+  .verdict strong { color: var(--text); }
+
+  /* Reachability overlay */
+  .reach-overlay {
+    position: absolute; inset: 0;
+    pointer-events: none; z-index: 2;
+    opacity: 0; transition: opacity 0.4s;
+  }
+  .reach-overlay.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- INTRO -->
+<div id="intro" class="screen active">
+  <h1><span>ThumbPad</span> Demo</h1>
+  <p>
+    Tap targets as fast as you can.
+    Compare normal touch vs ThumbPad mode
+    to see how a cursor helps reach the
+    top of your screen with one hand.
+  </p>
+  <button class="mode-btn btn-primary"
+    onclick="startDemo('thumbpad')">
+    Start with ThumbPad
+  </button>
+  <button class="mode-btn btn-secondary"
+    onclick="startDemo('normal')">
+    Start with Normal Touch
+  </button>
+  <button class="mode-btn btn-outline"
+    onclick="startDemo('freeplay')">
+    Free Play (no timer)
+  </button>
+</div>
+
+<!-- DEMO -->
+<div id="demo" class="screen">
+  <div class="top-bar">
+    <button class="back" onclick="goHome()">
+      Done
+    </button>
+    <span class="title" id="demoTitle">
+      ThumbPad
+    </span>
+    <span class="mode-label" id="modeLabel">
+      THUMBPAD
+    </span>
+  </div>
+  <div class="stats-bar">
+    <div class="stat">
+      <div class="stat-val green"
+        id="hitCount">0</div>
+      <div class="stat-label">Hits</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val" id="timeLeft">
+        15.0
+      </div>
+      <div class="stat-label">Time</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val"
+        id="avgTime">—</div>
+      <div class="stat-label">Avg (ms)</div>
+    </div>
+  </div>
+
+  <div class="target-area" id="targetArea">
+    <canvas class="reach-overlay"
+      id="reachOverlay"></canvas>
+  </div>
+
+  <!-- Cursor -->
+  <div id="cursor">
+    <svg viewBox="0 0 24 24" fill="none">
+      <path d="M5 3l14 8.5L12.5 13l-2 7L5 3z"
+        fill="white" stroke="#333"
+        stroke-width="1" />
+    </svg>
+  </div>
+  <div class="snap-ring" id="snapRing"></div>
+
+  <!-- ThumbPad -->
+  <div class="thumbpad-zone" id="thumbpadZone">
+    <div class="pad-border"></div>
+    <span class="hint">
+      Touch &amp; drag here to move cursor
+    </span>
+    <div class="touch-indicator"
+      id="touchIndicator"></div>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div id="results" class="screen">
+  <h2 id="resultsTitle">Results</h2>
+  <div class="result-card" id="resultCard">
+  </div>
+  <button class="mode-btn btn-primary"
+    id="nextBtn" onclick="startNextMode()">
+    Next
+  </button>
+  <button class="mode-btn btn-secondary"
+    onclick="goHome()">
+    Home
+  </button>
+</div>
+
+<!-- COMPARISON -->
+<div id="comparison" class="screen">
+  <h2>Comparison</h2>
+  <div class="comp-cards" id="compCards"></div>
+  <p class="verdict" id="verdict"></p>
+  <button class="mode-btn btn-primary"
+    onclick="goHome()">
+    Try Again
+  </button>
+</div>
+
+<script>
+const ROUND_TIME = 15;
+const TARGET_COUNT = 1;
+const SNAP_DIST = 40;
+const GAIN = 2.2;
+const ICONS = [
+  '&#9733;','&#9829;','&#9830;',
+  '&#9827;','&#9786;','&#10052;',
+  '&#9788;','&#9790;','&#9792;'
+];
+const COLORS = [
+  '#FF3B30','#FF9500','#FFCC00',
+  '#34C759','#007AFF','#5856D6',
+  '#AF52DE','#FF2D55','#5AC8FA'
+];
+
+let mode = null;
+let isThumbpad = false;
+let isFreeplay = false;
+let timer = null;
+let timeRemaining = ROUND_TIME;
+let hits = 0;
+let hitTimes = [];
+let lastTargetTime = 0;
+let targets = [];
+let cursorX = 0, cursorY = 0;
+let padActive = false;
+let touchStartX = 0, touchStartY = 0;
+let cursorStartX = 0, cursorStartY = 0;
+let results = {};
+let currentSnap = null;
+
+const $ = id => document.getElementById(id);
+
+function showScreen(id) {
+  document.querySelectorAll('.screen')
+    .forEach(s => s.classList.remove('active'));
+  $(id).classList.add('active');
+}
+
+function goHome() {
+  clearInterval(timer);
+  showScreen('intro');
+  mode = null;
+}
+
+function startDemo(m) {
+  mode = m;
+  isFreeplay = (m === 'freeplay');
+  isThumbpad = (m === 'thumbpad' ||
+    m === 'freeplay');
+
+  const demo = $('demo');
+  demo.classList.toggle(
+    'normal-mode', !isThumbpad
+  );
+
+  $('demoTitle').textContent =
+    isThumbpad ? 'ThumbPad' : 'Normal Touch';
+  const label = $('modeLabel');
+  label.textContent =
+    isThumbpad ? 'THUMBPAD' : 'NORMAL';
+  label.className = 'mode-label ' +
+    (isThumbpad ?
+      'thumbpad-label' : 'normal-label');
+
+  hits = 0;
+  hitTimes = [];
+  timeRemaining = ROUND_TIME;
+  $('hitCount').textContent = '0';
+  $('timeLeft').textContent =
+    isFreeplay ? '∞' : ROUND_TIME.toFixed(1);
+  $('avgTime').textContent = '—';
+
+  clearTargets();
+  showScreen('demo');
+  drawReachOverlay();
+
+  setTimeout(() => {
+    spawnTarget();
+    lastTargetTime = Date.now();
+    if (!isFreeplay) {
+      timer = setInterval(tick, 100);
+    }
+  }, 400);
+
+  if (isThumbpad) {
+    const area = $('targetArea');
+    const r = area.getBoundingClientRect();
+    cursorX = r.left + r.width / 2;
+    cursorY = r.top + r.height / 2;
+    updateCursor();
+    $('cursor').style.display = 'block';
+  } else {
+    $('cursor').style.display = 'none';
+  }
+}
+
+function tick() {
+  timeRemaining -= 0.1;
+  if (timeRemaining <= 0) {
+    timeRemaining = 0;
+    clearInterval(timer);
+    endRound();
+  }
+  $('timeLeft').textContent =
+    timeRemaining.toFixed(1);
+}
+
+function endRound() {
+  clearTargets();
+  $('cursor').style.display = 'none';
+  $('snapRing').style.display = 'none';
+
+  const avg = hitTimes.length > 0
+    ? Math.round(
+        hitTimes.reduce((a, b) => a + b, 0) /
+        hitTimes.length
+      )
+    : 0;
+
+  const topHits = hitTimes.filter(
+    (_, i) => targetWasTop[i]
+  );
+  const topAvg = topHits.length > 0
+    ? Math.round(
+        topHits.reduce((a, b) => a + b, 0) /
+        topHits.length
+      )
+    : 0;
+
+  const modeKey = isThumbpad ?
+    'thumbpad' : 'normal';
+  results[modeKey] = {
+    hits, avg, topAvg,
+    topHits: topHits.length
+  };
+
+  $('resultsTitle').textContent =
+    (isThumbpad ? 'ThumbPad' : 'Normal') +
+    ' Results';
+  $('resultCard').innerHTML = `
+    <div class="result-row">
+      <span class="label">Targets Hit</span>
+      <span class="val">${hits}</span>
+    </div>
+    <div class="divider"></div>
+    <div class="result-row">
+      <span class="label">Avg Time</span>
+      <span class="val">${avg}ms</span>
+    </div>
+    <div class="divider"></div>
+    <div class="result-row">
+      <span class="label">
+        Top-Half Hits
+      </span>
+      <span class="val">
+        ${topHits.length}
+      </span>
+    </div>
+    <div class="divider"></div>
+    <div class="result-row">
+      <span class="label">
+        Top-Half Avg
+      </span>
+      <span class="val">${topAvg}ms</span>
+    </div>
+  `;
+
+  const nextBtn = $('nextBtn');
+  if (results.thumbpad && results.normal) {
+    nextBtn.textContent = 'See Comparison';
+    nextBtn.onclick = showComparison;
+  } else {
+    const nextMode = isThumbpad ?
+      'normal' : 'thumbpad';
+    const nextLabel = isThumbpad ?
+      'Normal Touch' : 'ThumbPad';
+    nextBtn.textContent =
+      'Try ' + nextLabel + ' Mode';
+    nextBtn.onclick = () => startDemo(nextMode);
+  }
+
+  showScreen('results');
+}
+
+function showComparison() {
+  const t = results.thumbpad;
+  const n = results.normal;
+  const cards = $('compCards');
+
+  function row(label, tv, nv, unit, lower) {
+    const tWin = lower ?
+      (tv <= nv) : (tv >= nv);
+    return `
+      <div class="comp-card">
+        <div>
+          <div class="comp-label">
+            ${label}
+          </div>
+        </div>
+        <div style="display:flex;gap:20px;
+          align-items:center">
+          <div style="text-align:center">
+            <div class="comp-val
+              ${tWin ? 'winner' : 'loser'}">
+              ${tv}${unit}
+            </div>
+            <div style="font-size:10px;
+              color:#8E8E93">
+              Thumb
+            </div>
+          </div>
+          <div style="text-align:center">
+            <div class="comp-val
+              ${!tWin ? 'winner' : 'loser'}">
+              ${nv}${unit}
+            </div>
+            <div style="font-size:10px;
+              color:#8E8E93">
+              Normal
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  cards.innerHTML =
+    row('Total Hits', t.hits, n.hits, '', false) +
+    row('Avg Time', t.avg, n.avg, 'ms', true) +
+    row(
+      'Top-Half Hits',
+      t.topHits, n.topHits, '', false
+    ) +
+    row(
+      'Top-Half Avg',
+      t.topAvg, n.topAvg, 'ms', true
+    );
+
+  const diff = n.topAvg - t.topAvg;
+  const pct = n.topAvg > 0 ?
+    Math.round((diff / n.topAvg) * 100) : 0;
+  const v = $('verdict');
+  if (t.topAvg > 0 && n.topAvg > 0 &&
+      t.topAvg < n.topAvg) {
+    v.innerHTML =
+      `ThumbPad was <strong>${pct}%` +
+      ` faster</strong> at reaching ` +
+      `top-of-screen targets.`;
+  } else if (
+    t.topAvg > 0 && n.topAvg > 0
+  ) {
+    v.innerHTML =
+      `Normal touch was faster this round.` +
+      ` Try again with harder-to-reach ` +
+      `targets!`;
+  } else {
+    v.innerHTML = 'Not enough data to compare.';
+  }
+
+  showScreen('comparison');
+}
+
+let targetWasTop = [];
+
+function spawnTarget() {
+  clearTargets();
+  const area = $('targetArea');
+  const r = area.getBoundingClientRect();
+  const pad = 30;
+
+  const topBias = Math.random() < 0.65;
+  const x = pad + Math.random() *
+    (r.width - 2 * pad - 52);
+  let y;
+  if (topBias) {
+    y = pad + Math.random() *
+      (r.height * 0.35 - pad);
+  } else {
+    y = r.height * 0.35 +
+      Math.random() *
+      (r.height * 0.65 - pad - 52);
+  }
+
+  targetWasTop.push(y < r.height * 0.5);
+
+  const idx = Math.floor(
+    Math.random() * ICONS.length
+  );
+  const el = document.createElement('div');
+  el.className = 'target';
+  el.innerHTML =
+    `<div class="target-ring"></div>` +
+    ICONS[idx];
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  el.style.background = COLORS[idx];
+
+  el.dataset.cx = (
+    r.left + x + 26
+  ).toString();
+  el.dataset.cy = (
+    r.top + y + 26
+  ).toString();
+
+  if (!isThumbpad) {
+    el.addEventListener(
+      'touchstart', onTargetTap
+    );
+    el.addEventListener('click', onTargetTap);
+  }
+
+  area.appendChild(el);
+  targets.push(el);
+  lastTargetTime = Date.now();
+}
+
+function clearTargets() {
+  targets.forEach(t => t.remove());
+  targets = [];
+  currentSnap = null;
+  $('snapRing').style.display = 'none';
+}
+
+function hitTarget(el) {
+  const dt = Date.now() - lastTargetTime;
+  hitTimes.push(dt);
+  hits++;
+  $('hitCount').textContent = hits;
+  const avg = Math.round(
+    hitTimes.reduce((a, b) => a + b, 0) /
+    hitTimes.length
+  );
+  $('avgTime').textContent = avg;
+
+  el.classList.add('hit');
+  if (navigator.vibrate) {
+    navigator.vibrate(15);
+  }
+
+  setTimeout(() => {
+    if (timeRemaining > 0 || isFreeplay) {
+      spawnTarget();
+    }
+  }, 250);
+}
+
+function onTargetTap(e) {
+  e.preventDefault();
+  hitTarget(e.currentTarget);
+}
+
+// -- Cursor --
+function updateCursor() {
+  const c = $('cursor');
+  c.style.left = (cursorX - 2) + 'px';
+  c.style.top = (cursorY - 2) + 'px';
+
+  let snapped = null;
+  let minD = SNAP_DIST;
+  targets.forEach(t => {
+    if (t.classList.contains('hit')) return;
+    const cx = parseFloat(t.dataset.cx);
+    const cy = parseFloat(t.dataset.cy);
+    const d = Math.hypot(
+      cursorX - cx, cursorY - cy
+    );
+    if (d < minD) { minD = d; snapped = t; }
+  });
+
+  const ring = $('snapRing');
+  if (snapped) {
+    currentSnap = snapped;
+    c.classList.add('snapped');
+    const cx = parseFloat(snapped.dataset.cx);
+    const cy = parseFloat(snapped.dataset.cy);
+    ring.style.left = cx + 'px';
+    ring.style.top = cy + 'px';
+    ring.style.display = 'block';
+  } else {
+    currentSnap = null;
+    c.classList.remove('snapped');
+    ring.style.display = 'none';
+  }
+}
+
+// -- ThumbPad Touch --
+const pad = $('thumbpadZone');
+const indicator = $('touchIndicator');
+
+pad.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const t = e.touches[0];
+  padActive = true;
+  touchStartX = t.clientX;
+  touchStartY = t.clientY;
+  cursorStartX = cursorX;
+  cursorStartY = cursorY;
+  pad.classList.add('active');
+  indicator.style.display = 'block';
+  indicator.style.left = t.clientX + 'px';
+  indicator.style.top = t.clientY + 'px';
+  $('cursor').style.display = 'block';
+  $('cursor').style.opacity = '1';
+});
+
+pad.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (!padActive) return;
+  const t = e.touches[0];
+  const dx = (t.clientX - touchStartX) * GAIN;
+  const dy = (t.clientY - touchStartY) * GAIN;
+
+  const area = $('targetArea');
+  const r = area.getBoundingClientRect();
+  cursorX = Math.min(
+    Math.max(r.left, cursorStartX + dx),
+    r.right
+  );
+  cursorY = Math.min(
+    Math.max(r.top, cursorStartY + dy),
+    r.bottom
+  );
+
+  indicator.style.left = t.clientX + 'px';
+  indicator.style.top = t.clientY + 'px';
+  updateCursor();
+});
+
+pad.addEventListener('touchend', e => {
+  e.preventDefault();
+  padActive = false;
+  pad.classList.remove('active');
+  indicator.style.display = 'none';
+
+  if (currentSnap &&
+    !currentSnap.classList.contains('hit')) {
+    hitTarget(currentSnap);
+  }
+});
+
+pad.addEventListener('touchcancel', () => {
+  padActive = false;
+  pad.classList.remove('active');
+  indicator.style.display = 'none';
+});
+
+// -- Reachability overlay --
+function drawReachOverlay() {
+  const canvas = $('reachOverlay');
+  const area = $('targetArea');
+  const r = area.getBoundingClientRect();
+  canvas.width = r.width;
+  canvas.height = r.height;
+  canvas.style.width = r.width + 'px';
+  canvas.style.height = r.height + 'px';
+
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, r.width, r.height);
+
+  const grad = ctx.createLinearGradient(
+    0, 0, 0, r.height
+  );
+  grad.addColorStop(0, 'rgba(255,59,48,0.08)');
+  grad.addColorStop(0.5, 'rgba(255,59,48,0.02)');
+  grad.addColorStop(1, 'rgba(52,199,89,0.05)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, r.width, r.height);
+}
+
+// Prevent scrolling
+document.addEventListener(
+  'touchmove',
+  e => { if (e.target.closest('#demo'))
+    e.preventDefault(); },
+  { passive: false }
+);
+</script>
+</body>
+</html>
