@@ -180,18 +180,16 @@
     z-index: 100;
     display: none;
     filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5));
-    transition: none;
+    transition: opacity 200ms ease-out;
     opacity: 0;
+  }
+  #cursor.visible {
+    opacity: 1;
   }
   #cursor.snapping {
     transition: left 130ms ease-out,
-      top 130ms ease-out;
-  }
-  #cursor.snapped {
-    opacity: 1;
-    transition: left 130ms ease-out,
       top 130ms ease-out,
-      opacity 80ms ease-out;
+      opacity 200ms ease-out;
   }
   #cursor svg {
     width: 100%; height: 100%;
@@ -842,7 +840,6 @@ function updateCursor() {
     currentSnap = snapped;
     const cx = parseFloat(snapped.dataset.cx);
     const cy = parseFloat(snapped.dataset.cy);
-    c.classList.add('snapped');
     c.classList.add('snapping');
     c.style.left = (cx - 2) + 'px';
     c.style.top = (cy - 2) + 'px';
@@ -852,7 +849,6 @@ function updateCursor() {
   } else {
     wasSnapped = false;
     currentSnap = null;
-    c.classList.remove('snapped');
     c.classList.remove('snapping');
     c.style.left = (cursorX - 2) + 'px';
     c.style.top = (cursorY - 2) + 'px';
@@ -881,10 +877,12 @@ pad.addEventListener('touchstart', e => {
   indicator.style.top = t.clientY + 'px';
   const c = $('cursor');
   c.style.display = 'block';
-  c.classList.remove('snapped');
   c.classList.remove('snapping');
   c.style.left = (cursorX - 2) + 'px';
   c.style.top = (cursorY - 2) + 'px';
+  requestAnimationFrame(() => {
+    c.classList.add('visible');
+  });
 });
 
 pad.addEventListener('touchmove', e => {
@@ -930,17 +928,29 @@ pad.addEventListener('touchend', e => {
   padActive = false;
   pad.classList.remove('active');
   indicator.style.display = 'none';
+  const c = $('cursor');
+  c.classList.remove('visible');
+  c.classList.remove('snapping');
+  $('snapRing').style.display = 'none';
 
   if (currentSnap &&
     !currentSnap.classList.contains('hit')) {
     hitTarget(currentSnap);
   }
+  wasSnapped = false;
+  currentSnap = null;
 });
 
 pad.addEventListener('touchcancel', () => {
   padActive = false;
   pad.classList.remove('active');
   indicator.style.display = 'none';
+  const c = $('cursor');
+  c.classList.remove('visible');
+  c.classList.remove('snapping');
+  $('snapRing').style.display = 'none';
+  wasSnapped = false;
+  currentSnap = null;
 });
 
 // -- Reachability overlay --
