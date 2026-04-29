@@ -181,10 +181,17 @@
     display: none;
     filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5));
     transition: none;
+    opacity: 0;
   }
   #cursor.snapping {
     transition: left 130ms ease-out,
       top 130ms ease-out;
+  }
+  #cursor.snapped {
+    opacity: 1;
+    transition: left 130ms ease-out,
+      top 130ms ease-out,
+      opacity 80ms ease-out;
   }
   #cursor svg {
     width: 100%; height: 100%;
@@ -861,19 +868,23 @@ pad.addEventListener('touchstart', e => {
   e.preventDefault();
   const t = e.touches[0];
   padActive = true;
-  touchStartX = t.clientX;
-  touchStartY = t.clientY;
+  const area = $('targetArea');
+  const r = area.getBoundingClientRect();
+  cursorX = r.left + r.width / 2;
+  cursorY = r.top + r.height / 2;
   lastTouchX = t.clientX;
   lastTouchY = t.clientY;
   lastTouchTime = Date.now();
-  cursorStartX = cursorX;
-  cursorStartY = cursorY;
   pad.classList.add('active');
   indicator.style.display = 'block';
   indicator.style.left = t.clientX + 'px';
   indicator.style.top = t.clientY + 'px';
-  $('cursor').style.display = 'block';
-  $('cursor').style.opacity = '1';
+  const c = $('cursor');
+  c.style.display = 'block';
+  c.classList.remove('snapped');
+  c.classList.remove('snapping');
+  c.style.left = (cursorX - 2) + 'px';
+  c.style.top = (cursorY - 2) + 'px';
 });
 
 pad.addEventListener('touchmove', e => {
