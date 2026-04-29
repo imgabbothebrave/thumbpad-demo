@@ -808,10 +808,15 @@ function updateCursor() {
   let minD = SNAP_DIST;
   targets.forEach(t => {
     if (t.classList.contains('hit')) return;
-    const cx = parseFloat(t.dataset.cx);
-    const cy = parseFloat(t.dataset.cy);
+    const r = t.getBoundingClientRect();
+    const nearX = Math.max(
+      r.left, Math.min(cursorX, r.right)
+    );
+    const nearY = Math.max(
+      r.top, Math.min(cursorY, r.bottom)
+    );
     const d = Math.hypot(
-      cursorX - cx, cursorY - cy
+      cursorX - nearX, cursorY - nearY
     );
     if (d < minD) { minD = d; snapped = t; }
   });
